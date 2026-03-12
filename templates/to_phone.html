@@ -20,7 +20,7 @@
             <p class="eyebrow">Computer to phone</p>
             <h1>Send Files to Phone</h1>
             <p class="lede">
-              Choose files from this computer, optionally rename them, then stage them for phone download.
+              Choose files from this computer, optionally rename them, then send them to your phone.
             </p>
             <div class="network-panel">
               <div>
@@ -32,11 +32,12 @@
               </div>
             </div>
             <p class="hint">Photos/videos only. Max size per file: {{ max_upload_mb }} MB.</p>
+            <p class="hint">Sent files are available on the phone page below.</p>
           {% else %}
             <p class="eyebrow">Phone download view</p>
             <h1>Files from Computer</h1>
             <p class="lede">
-              These files were staged on the computer. Tap a file to open or download it to your phone.
+              These files were sent from the computer. Tap a file to open or download it to your phone.
             </p>
           {% endif %}
           <div class="hero-actions">
@@ -50,7 +51,10 @@
 
       <section class="upload-card">
         {% if can_stage %}
-          <p class="hint">This page is separate from phone-to-computer uploads.</p>
+          <p class="hint">
+            Choose files, optionally rename them, then press Send to Phone. This page is separate from
+            phone-to-computer uploads.
+          </p>
           <form id="to-phone-form" class="upload-form">
             <label class="file-picker">
               <span>Choose Files on Computer</span>
@@ -64,14 +68,14 @@
             </label>
             <div id="to-phone-preview-list" class="preview-list"></div>
             <button id="to-phone-submit-button" type="submit" class="submit-button" disabled>
-              Stage and Send to Phone
+              Send to Phone
             </button>
           </form>
 
           <div id="to-phone-status" class="status" aria-live="polite"></div>
 
           <section id="to-phone-confirmation" class="upload-confirmation" hidden>
-            <h2>Staged for phone download</h2>
+            <h2>Sent to phone download page</h2>
             <p id="to-phone-confirmation-summary" class="confirmation-summary"></p>
             <p id="to-phone-confirmation-folder" class="confirmation-folder"></p>
             <p id="to-phone-confirmation-link" class="confirmation-folder"></p>
@@ -99,7 +103,7 @@
             {% endfor %}
           </div>
         {% elif not can_stage %}
-          <p class="hint">No files have been staged from the computer yet.</p>
+          <p class="hint">No files have been sent from the computer yet.</p>
         {% endif %}
       </section>
     </main>

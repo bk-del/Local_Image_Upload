@@ -89,7 +89,8 @@ def test_to_phone_page_shows_staging_form_for_local_client(monkeypatch, tmp_path
     assert response.status_code == 200
     assert "Send Files to Phone" in response.text
     assert "Choose Files on Computer" in response.text
-    assert "Staged for phone download" in response.text
+    assert "Send to Phone" in response.text
+    assert "Sent to phone download page" in response.text
     assert 'id="presence-chip"' in response.text
     assert 'id="to-phone-form"' in response.text
 
@@ -106,6 +107,7 @@ def test_to_phone_page_shows_download_list_for_remote_client(monkeypatch, tmp_pa
 
     assert response.status_code == 200
     assert "Files from Computer" in response.text
+    assert "These files were sent from the computer." in response.text
     assert 'id="presence-chip"' in response.text
     assert 'id="to-phone-form"' not in response.text
     assert "shared.mp4" in response.text
@@ -302,7 +304,7 @@ def test_to_phone_stage_saves_file_in_to_phone_subfolder(monkeypatch, tmp_path: 
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["message"] == "Staged 1 file(s) for phone download."
+    assert payload["message"] == "Sent 1 file(s) to phone download page."
     assert payload["saved_files"][0]["saved_name"] == "family-video.mp4"
     assert payload["saved_files"][0]["relative_path"].startswith("to-phone/")
     assert payload["saved_files"][0]["preview_url"].startswith("/uploads/to-phone/")

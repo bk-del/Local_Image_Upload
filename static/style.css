@@ -76,6 +76,36 @@ body {
   word-break: break-word;
 }
 
+/* Keep the chip compact on remote/phone view and reserve space for it. */
+body.view-remote .presence-chip {
+  top: 0.45rem;
+  right: 0.45rem;
+  width: min(220px, calc(100vw - 0.9rem));
+  padding: 0.45rem 0.55rem;
+}
+
+body.view-remote .presence-title {
+  font-size: 0.62rem;
+}
+
+body.view-remote .presence-state {
+  margin-top: 0.1rem;
+  font-size: 0.86rem;
+}
+
+body.view-remote .presence-detail {
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.view-remote .page-shell {
+  padding-top: 5rem;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -418,6 +448,17 @@ h1 {
     top: 0.55rem;
     right: 0.55rem;
     width: min(100%, calc(100vw - 1.1rem));
+  }
+
+  body.view-remote .presence-chip {
+    top: 0.4rem;
+    right: 0.4rem;
+    width: min(180px, calc(100vw - 0.8rem));
+    padding: 0.4rem 0.5rem;
+  }
+
+  body.view-remote .page-shell {
+    padding-top: 4.5rem;
   }
 
   .page-shell {

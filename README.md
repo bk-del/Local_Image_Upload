@@ -58,10 +58,11 @@ The browser opens automatically on the computer.
 1. On the computer main page, click **Send Files to Phone**.
 2. Click **Choose Files on Computer** and select photos/videos from any folder.
 3. (Optional) rename files.
-4. Click **Stage and Send to Phone**.
+4. Click **Send to Phone**.
 5. Use the page QR code (or URL) on the phone to open `/to-phone`.
 6. On the phone `/to-phone` page, tap **Open / Download** on a file.
 7. Both screens show top-right live connection status.
+8. **Send to Phone** means files become available at `/to-phone`; the phone user still taps **Open / Download**.
 
 ## Where files go
 
@@ -69,7 +70,7 @@ Phone -> computer uploads are saved to:
 
 - `uploads/YYYY-MM-DD/`
 
-Computer -> phone staged files are saved to:
+Computer -> phone sent files are saved to:
 
 - `uploads/to-phone/YYYY-MM-DD/`
 
@@ -93,7 +94,7 @@ Rules:
 
 - **Open Photo Folder**: opens top-level `uploads/` on the computer
 - **View Uploaded Photos**: opens gallery (`/gallery`) of photos stored on the computer
-- **Send Files to Phone**: opens isolated page to stage files for phone download (`/to-phone`)
+- **Send Files to Phone**: opens isolated page to send files to the phone download page (`/to-phone`)
 
 `Open Photo Folder` is local-only and cannot be triggered by phone clients.
 

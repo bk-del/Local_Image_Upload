@@ -43,6 +43,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title=app_settings.app_name)
     app.state.settings = app_settings
+    app.state.upload_event_id = 0
+    app.state.latest_upload_event = None
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.mount("/uploads", StaticFiles(directory=str(app_settings.upload_dir)), name="uploads")
 
@@ -90,8 +92,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         return JSONResponse({"message": "Opened uploads folder.", "path": str(uploads_path)})
 
+    @app.get("/upload-status")
+    async def upload_status(request: Request) -> JSONResponse:
+        if not is_local_machine_request(request):
+            raise HTTPException(
+                status_code=403,
+                detail="This action is only available on this computer.",
+            )
+
+        return JSONResponse({"latest_upload": app.state.latest_upload_event})
+
     @app.post("/upload")
     async def upload_images(
+        request: Request,
         files: Annotated[list[UploadFile], File(...)],
         names: Annotated[list[str] | None, Form()] = None,
     ) -> JSONResponse:
@@ -132,15 +145,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         uploaded_count = len(saved_files)
         saved_folder = target_dir.relative_to(app_settings.upload_dir.parent).as_posix()
-        return JSONResponse(
-            {
-                "message": f"Uploaded {uploaded_count} photo(s).",
-                "uploaded_count": uploaded_count,
-                "saved_folder": saved_folder,
-                "saved_files": saved_files,
-                "target_directory": str(target_dir),
-            }
-        )
+        response_payload = {
+            "message": f"Uploaded {uploaded_count} photo(s).",
+            "uploaded_count": uploaded_count,
+            "saved_folder": saved_folder,
+            "saved_files": saved_files,
+            "target_directory": str(target_dir),
+        }
+        app.state.upload_event_id += 1
+        app.state.latest_upload_event = {
+            "event_id": app.state.upload_event_id,
+            "timestamp": dt.datetime.now(dt.UTC).isoformat(),
+            "source_host": request.client.host if request.client else "unknown",
+            "message": response_payload["message"],
+            "uploaded_count": uploaded_count,
+            "saved_folder": saved_folder,
+            "saved_files": saved_files,
+        }
+
+        return JSONResponse(response_payload)
 
     return app
 

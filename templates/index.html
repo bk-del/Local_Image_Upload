@@ -54,33 +54,38 @@
 
       <section class="upload-card">
         {% if can_open_uploads %}
-          <p class="hint">
-            Uploads sent from your phone will appear below. You can also send test photos from this computer.
-          </p>
+          <p id="monitor-state" class="hint">Waiting for photos from phone.</p>
+          <div id="status" class="status" aria-live="polite"></div>
+          <section id="upload-confirmation" class="upload-confirmation" hidden>
+            <h2>Upload complete</h2>
+            <p id="confirmation-summary" class="confirmation-summary"></p>
+            <p id="confirmation-folder" class="confirmation-folder"></p>
+            <div id="confirmation-files" class="confirmation-files"></div>
+          </section>
         {% else %}
           <p class="hint">Choose photos, optionally rename each one, then send to the computer.</p>
+          <form id="upload-form" class="upload-form">
+            <label class="file-picker">
+              <span>Choose Photos</span>
+              <input id="file-input" name="files" type="file" accept="image/*" multiple />
+            </label>
+
+            <div id="preview-list" class="preview-list"></div>
+
+            <button id="submit-button" type="submit" class="submit-button" disabled>
+              Send Photos to Computer
+            </button>
+          </form>
+
+          <div id="status" class="status" aria-live="polite"></div>
+
+          <section id="upload-confirmation" class="upload-confirmation" hidden>
+            <h2>Upload complete</h2>
+            <p id="confirmation-summary" class="confirmation-summary"></p>
+            <p id="confirmation-folder" class="confirmation-folder"></p>
+            <div id="confirmation-files" class="confirmation-files"></div>
+          </section>
         {% endif %}
-        <form id="upload-form" class="upload-form">
-          <label class="file-picker">
-            <span>Choose Photos</span>
-            <input id="file-input" name="files" type="file" accept="image/*" multiple />
-          </label>
-
-          <div id="preview-list" class="preview-list"></div>
-
-          <button id="submit-button" type="submit" class="submit-button" disabled>
-            {% if can_open_uploads %}Send Photos to This Computer{% else %}Send Photos to Computer{% endif %}
-          </button>
-        </form>
-
-        <div id="status" class="status" aria-live="polite"></div>
-
-        <section id="upload-confirmation" class="upload-confirmation" hidden>
-          <h2>Upload complete</h2>
-          <p id="confirmation-summary" class="confirmation-summary"></p>
-          <p id="confirmation-folder" class="confirmation-folder"></p>
-          <div id="confirmation-files" class="confirmation-files"></div>
-        </section>
       </section>
     </main>
 

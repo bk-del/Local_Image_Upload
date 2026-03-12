@@ -1,4 +1,5 @@
 const POLL_INTERVAL_MS = 3000;
+const VIDEO_FILE_PATTERN = /\.(mp4|mov|m4v|webm|avi)$/i;
 const statusBox = document.getElementById("status");
 const openUploadsButton = document.getElementById("open-uploads-button");
 const monitorState = document.getElementById("monitor-state");
@@ -39,10 +40,19 @@ const buildConfirmationItem = (item) => {
   const card = document.createElement("article");
   card.className = "confirmation-item";
 
-  const thumb = document.createElement("img");
-  thumb.src = item.preview_url;
-  thumb.alt = item.saved_name;
-  thumb.loading = "lazy";
+  const isVideo = VIDEO_FILE_PATTERN.test(item.saved_name || "");
+  let thumb;
+  if (isVideo) {
+    thumb = document.createElement("video");
+    thumb.src = item.preview_url;
+    thumb.controls = true;
+    thumb.preload = "metadata";
+  } else {
+    thumb = document.createElement("img");
+    thumb.src = item.preview_url;
+    thumb.alt = item.saved_name;
+    thumb.loading = "lazy";
+  }
 
   const info = document.createElement("div");
   info.className = "confirmation-meta";
@@ -65,7 +75,7 @@ const showConfirmation = (payload) => {
     return;
   }
 
-  confirmationSummary.textContent = `Uploaded ${payload.uploaded_count} photo(s) successfully.`;
+  confirmationSummary.textContent = `Uploaded ${payload.uploaded_count} file(s) successfully.`;
   confirmationFolder.textContent = `Saved to: ${payload.saved_folder}`;
   confirmationFiles.innerHTML = "";
   payload.saved_files.forEach((item) => {
@@ -118,10 +128,19 @@ const initPhoneUploadForm = () => {
     const thumb = document.createElement("div");
     thumb.className = "preview-thumb";
 
-    const image = document.createElement("img");
-    image.src = URL.createObjectURL(file);
-    image.alt = file.name;
-    thumb.appendChild(image);
+    const objectUrl = URL.createObjectURL(file);
+    if (file.type.startsWith("video/")) {
+      const video = document.createElement("video");
+      video.src = objectUrl;
+      video.controls = true;
+      video.preload = "metadata";
+      thumb.appendChild(video);
+    } else {
+      const image = document.createElement("img");
+      image.src = objectUrl;
+      image.alt = file.name;
+      thumb.appendChild(image);
+    }
 
     const meta = document.createElement("div");
     meta.className = "preview-meta";
@@ -172,7 +191,7 @@ const initPhoneUploadForm = () => {
 
     const files = Array.from(fileInput.files || []);
     if (!files.length) {
-      setStatus("Select at least one image before uploading.", "error");
+      setStatus("Select at least one photo or video before uploading.", "error");
       return;
     }
 
@@ -192,7 +211,7 @@ const initPhoneUploadForm = () => {
     });
 
     submitButton.disabled = true;
-    setStatus("Sending photos to computer...");
+    setStatus("Sending photos/videos to computer...");
     clearConfirmation();
 
     try {
@@ -238,7 +257,7 @@ const initDesktopMonitor = () => {
       }
 
       latestEventId = latestUpload.event_id;
-      monitorState.textContent = `Received ${latestUpload.uploaded_count} photo(s) from phone.`;
+      monitorState.textContent = `Received ${latestUpload.uploaded_count} file(s) from phone.`;
       setStatus(latestUpload.message, "success");
       showConfirmation(latestUpload);
     } catch (error) {

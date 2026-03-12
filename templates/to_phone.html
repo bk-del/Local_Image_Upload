@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_name }} - Computer to Phone</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
+  </head>
+  <body class="{% if can_stage %}view-local{% else %}view-remote{% endif %}">
+    <aside id="presence-chip" class="presence-chip">
+      <p class="presence-title">Connection status</p>
+      <p id="presence-state" class="presence-state">Checking...</p>
+      <p id="presence-detail" class="presence-detail">Waiting for device heartbeat.</p>
+    </aside>
+
+    <main class="page-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          {% if can_stage %}
+            <p class="eyebrow">Computer to phone</p>
+            <h1>Send Files to Phone</h1>
+            <p class="lede">
+              Choose files from this computer, optionally rename them, then stage them for phone download.
+            </p>
+            <div class="network-panel">
+              <div>
+                <p class="label">Phone download page</p>
+                <a class="network-link" href="{{ to_phone_url }}">{{ to_phone_url }}</a>
+              </div>
+              <div class="qr-block">
+                <img src="{{ qr_data_uri }}" alt="QR code for phone downloads" />
+              </div>
+            </div>
+            <p class="hint">Photos/videos only. Max size per file: {{ max_upload_mb }} MB.</p>
+          {% else %}
+            <p class="eyebrow">Phone download view</p>
+            <h1>Files from Computer</h1>
+            <p class="lede">
+              These files were staged on the computer. Tap a file to open or download it to your phone.
+            </p>
+          {% endif %}
+          <div class="hero-actions">
+            <a class="secondary-button" href="/">Back to Main Page</a>
+            {% if can_stage %}
+              <a class="secondary-button" href="/gallery">View Uploaded Photos</a>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+
+      <section class="upload-card">
+        {% if can_stage %}
+          <p class="hint">This page is separate from phone-to-computer uploads.</p>
+          <form id="to-phone-form" class="upload-form">
+            <label class="file-picker">
+              <span>Choose Files on Computer</span>
+              <input
+                id="to-phone-file-input"
+                name="files"
+                type="file"
+                accept="image/*,video/*"
+                multiple
+              />
+            </label>
+            <div id="to-phone-preview-list" class="preview-list"></div>
+            <button id="to-phone-submit-button" type="submit" class="submit-button" disabled>
+              Stage and Send to Phone
+            </button>
+          </form>
+
+          <div id="to-phone-status" class="status" aria-live="polite"></div>
+
+          <section id="to-phone-confirmation" class="upload-confirmation" hidden>
+            <h2>Staged for phone download</h2>
+            <p id="to-phone-confirmation-summary" class="confirmation-summary"></p>
+            <p id="to-phone-confirmation-folder" class="confirmation-folder"></p>
+            <p id="to-phone-confirmation-link" class="confirmation-folder"></p>
+            <div id="to-phone-confirmation-files" class="confirmation-files"></div>
+          </section>
+        {% endif %}
+
+        {% if files %}
+          <div class="gallery-grid">
+            {% for file in files %}
+              <article class="gallery-item">
+                {% if file.is_video %}
+                  <video controls preload="metadata">
+                    <source src="{{ file.url }}" />
+                  </video>
+                {% else %}
+                  <img src="{{ file.url }}" alt="{{ file.name }}" loading="lazy" />
+                {% endif %}
+                <p class="gallery-name">{{ file.name }}</p>
+                <p class="gallery-path">{{ file.relative_path }}</p>
+                <a class="gallery-open-link" href="{{ file.url }}" target="_blank" rel="noopener" download>
+                  Open / Download
+                </a>
+              </article>
+            {% endfor %}
+          </div>
+        {% elif not can_stage %}
+          <p class="hint">No files have been staged from the computer yet.</p>
+        {% endif %}
+      </section>
+    </main>
+
+    <script>
+      window.APP_CONFIG = {
+        maxUploadMb: {{ max_upload_mb }},
+        presencePage: "to-phone",
+        presenceHeartbeatSeconds: {{ presence_heartbeat_seconds }},
+      };
+    </script>
+    <script src="{{ url_for('static', path='presence.js') }}" defer></script>
+    {% if can_stage %}
+      <script src="{{ url_for('static', path='to_phone.js') }}" defer></script>
+    {% endif %}
+  </body>
+</html>

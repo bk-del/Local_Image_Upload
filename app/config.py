@@ -10,9 +10,21 @@ class Settings:
     host: str = "0.0.0.0"
     port: int = 8000
     upload_dir: Path = Path("uploads")
-    max_upload_bytes: int = 15 * 1024 * 1024
+    max_upload_bytes: int = 500 * 1024 * 1024
     allowed_extensions: set[str] = field(
-        default_factory=lambda: {".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic"}
+        default_factory=lambda: {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".gif",
+            ".heic",
+            ".mp4",
+            ".mov",
+            ".m4v",
+            ".webm",
+            ".avi",
+        }
     )
     open_browser_on_start: bool = True
 

@@ -12,6 +12,8 @@ from pathlib import Path
 
 import qrcode
 
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".avi"}
+
 
 def sanitize_stem(value: str) -> str:
     stem = value.strip().lower()
@@ -23,6 +25,40 @@ def sanitize_stem(value: str) -> str:
 
 def get_extension(filename: str) -> str:
     return Path(filename).suffix.lower()
+
+
+def infer_device_label(user_agent: str) -> str:
+    ua = user_agent.lower()
+
+    if "iphone" in ua:
+        device = "iPhone"
+    elif "ipad" in ua:
+        device = "iPad"
+    elif "android" in ua:
+        device = "Android"
+    elif "windows" in ua:
+        device = "Windows"
+    elif "macintosh" in ua or "mac os x" in ua:
+        device = "macOS"
+    elif "linux" in ua:
+        device = "Linux"
+    else:
+        device = "Unknown"
+
+    if "edg/" in ua or "edge/" in ua:
+        browser = "Edge"
+    elif "opr/" in ua or "opera" in ua:
+        browser = "Opera"
+    elif "firefox/" in ua:
+        browser = "Firefox"
+    elif "chrome/" in ua and "edg/" not in ua and "opr/" not in ua:
+        browser = "Chrome"
+    elif "safari/" in ua and "chrome/" not in ua:
+        browser = "Safari"
+    else:
+        browser = "Browser"
+
+    return f"{device} {browser}"
 
 
 def is_local_client_host(client_host: str | None, local_ip: str) -> bool:
@@ -42,6 +78,7 @@ def is_local_client_host(client_host: str | None, local_ip: str) -> bool:
 
 def detect_local_ip() -> str:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(0.5)
     try:
         sock.connect(("8.8.8.8", 80))
         local_ip = sock.getsockname()[0]
@@ -70,10 +107,16 @@ def open_directory_in_file_browser(path: Path) -> None:
     webbrowser.open(resolved.as_uri())
 
 
-def list_uploaded_images(upload_dir: Path, allowed_extensions: set[str]) -> list[dict[str, str]]:
-    images: list[dict[str, str]] = []
+def list_uploaded_images(
+    upload_dir: Path,
+    allowed_extensions: set[str],
+    url_prefix: str = "/uploads",
+) -> list[dict[str, str | bool]]:
+    images: list[dict[str, str | bool]] = []
+    normalized_prefix = url_prefix.rstrip("/")
     for image_path in sorted(upload_dir.rglob("*"), reverse=True):
-        if not image_path.is_file() or image_path.suffix.lower() not in allowed_extensions:
+        extension = image_path.suffix.lower()
+        if not image_path.is_file() or extension not in allowed_extensions:
             continue
 
         relative_path = image_path.relative_to(upload_dir).as_posix()
@@ -81,7 +124,8 @@ def list_uploaded_images(upload_dir: Path, allowed_extensions: set[str]) -> list
             {
                 "name": image_path.name,
                 "relative_path": relative_path,
-                "url": f"/uploads/{relative_path}",
+                "url": f"{normalized_prefix}/{relative_path}",
+                "is_video": extension in VIDEO_EXTENSIONS,
             }
         )
 

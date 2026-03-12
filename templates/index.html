@@ -7,18 +7,24 @@
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
   </head>
   <body class="{% if can_open_uploads %}view-local{% else %}view-remote{% endif %}">
+    <aside id="presence-chip" class="presence-chip">
+      <p class="presence-title">Connection status</p>
+      <p id="presence-state" class="presence-state">Checking...</p>
+      <p id="presence-detail" class="presence-detail">Waiting for device heartbeat.</p>
+    </aside>
+
     <main class="page-shell">
       <section class="hero-card">
         <div class="hero-copy">
           {% if can_open_uploads %}
             <p class="eyebrow">Computer view</p>
             <h1>{{ app_name }}</h1>
-            <p class="lede">Scan to send photos from your phone.</p>
+            <p class="lede">Scan to send photos/videos from your phone.</p>
           {% else %}
             <p class="eyebrow">Phone view</p>
-            <h1>Send Photos to Computer</h1>
+            <h1>Send Photos/Videos to Computer</h1>
             <p class="lede">
-              Choose photos on your phone and send them directly to this computer.
+              Choose photos/videos on your phone and send them directly to this computer.
             </p>
           {% endif %}
           <div class="network-panel">
@@ -33,19 +39,21 @@
             {% endif %}
           </div>
           {% if can_open_uploads %}
-            <p class="hint">Images only. Max size per file: {{ max_upload_mb }} MB.</p>
+            <p class="hint">Photos/videos only. Max size per file: {{ max_upload_mb }} MB.</p>
           {% else %}
             <p class="hint">
-              Destination is this computer. Images only. Max size per file: {{ max_upload_mb }} MB.
+              Destination is this computer. Photos/videos only. Max size per file: {{ max_upload_mb }} MB.
             </p>
           {% endif %}
           <div class="hero-actions">
             {% if can_open_uploads %}
+              <a class="secondary-button" href="/to-phone">Send Files to Phone</a>
               <button id="open-uploads-button" type="button" class="secondary-button">
                 Open Photo Folder
               </button>
               <a class="secondary-button" href="/gallery">View Uploaded Photos</a>
             {% else %}
+              <a class="secondary-button" href="/to-phone">Download Files from Computer</a>
               <a class="secondary-button" href="/gallery">View Photos Stored on Computer</a>
             {% endif %}
           </div>
@@ -54,7 +62,7 @@
 
       <section class="upload-card">
         {% if can_open_uploads %}
-          <p id="monitor-state" class="hint">Waiting for photos from phone.</p>
+          <p id="monitor-state" class="hint">Waiting for photos/videos from phone.</p>
           <div id="status" class="status" aria-live="polite"></div>
           <section id="upload-confirmation" class="upload-confirmation" hidden>
             <h2>Upload complete</h2>
@@ -63,17 +71,17 @@
             <div id="confirmation-files" class="confirmation-files"></div>
           </section>
         {% else %}
-          <p class="hint">Choose photos, optionally rename each one, then send to the computer.</p>
+          <p class="hint">Choose photos/videos, optionally rename each one, then send to the computer.</p>
           <form id="upload-form" class="upload-form">
             <label class="file-picker">
-              <span>Choose Photos</span>
-              <input id="file-input" name="files" type="file" accept="image/*" multiple />
+              <span>Choose Photos/Videos</span>
+              <input id="file-input" name="files" type="file" accept="image/*,video/*" multiple />
             </label>
 
             <div id="preview-list" class="preview-list"></div>
 
             <button id="submit-button" type="submit" class="submit-button" disabled>
-              Send Photos to Computer
+              Send Photos/Videos to Computer
             </button>
           </form>
 
@@ -92,8 +100,11 @@
     <script>
       window.APP_CONFIG = {
         maxUploadMb: {{ max_upload_mb }},
+        presencePage: "index",
+        presenceHeartbeatSeconds: {{ presence_heartbeat_seconds }},
       };
     </script>
+    <script src="{{ url_for('static', path='presence.js') }}" defer></script>
     <script src="{{ url_for('static', path='app.js') }}" defer></script>
   </body>
 </html>

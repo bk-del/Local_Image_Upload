@@ -4,9 +4,7 @@ import datetime as dt
 import webbrowser
 from pathlib import Path
 from typing import Annotated
-import os
-import platform 
-import subprocess
+
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse

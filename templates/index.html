@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Local Wi-Fi image transfer</p>
+          <h1>{{ app_name }}</h1>
+          <p class="lede">
+            Open this page on your phone, preview the images, optionally rename each one,
+            and send them straight to this computer.
+          </p>
+          <div class="network-panel">
+            <div>
+              <p class="label">Phone URL</p>
+              <a class="network-link" href="{{ network_url }}">{{ network_url }}</a>
+            </div>
+            <div class="qr-block">
+              <img src="{{ qr_data_uri }}" alt="QR code for opening the app on a phone" />
+            </div>
+          </div>
+          <p class="hint">
+            Images only. Max size per file: {{ max_upload_mb }} MB.
+          </p>
+        </div>
+      </section>
+
+      <section class="upload-card">
+        <form id="upload-form" class="upload-form">
+          <label class="file-picker">
+            <span>Select images</span>
+            <input id="file-input" name="files" type="file" accept="image/*" multiple />
+          </label>
+
+          <div id="preview-list" class="preview-list"></div>
+
+          <button id="submit-button" type="submit" class="submit-button" disabled>
+            Upload images
+          </button>
+        </form>
+
+        <div id="status" class="status" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script>
+      window.APP_CONFIG = {
+        maxUploadMb: {{ max_upload_mb }},
+      };
+    </script>
+    <script src="{{ url_for('static', path='app.js') }}" defer></script>
+  </body>
+</html>

@@ -27,6 +27,7 @@ from app.utils import (
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+UPLOAD_STREAM_CHUNK_SIZE = 1024 * 1024
 
 
 def is_local_machine_request(request: Request, local_ip: str | None = None) -> bool:
@@ -115,22 +116,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         for index, uploaded_file in enumerate(files):
             extension = get_extension(uploaded_file.filename or "")
             if extension not in app_settings.allowed_extensions:
+                await uploaded_file.close()
                 raise HTTPException(
                     status_code=400,
                     detail=f"Unsupported file type for {uploaded_file.filename or 'unknown file'}.",
                 )
 
-            content = await uploaded_file.read()
-            if len(content) > app_settings.max_upload_bytes:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"{uploaded_file.filename or 'File'} exceeds the size limit.",
-                )
-
             custom_name = resolved_names[index].strip() if index < len(resolved_names) else ""
             desired_stem = custom_name or Path(uploaded_file.filename or "image").stem
             destination = unique_path(target_dir, sanitize_stem(desired_stem), extension)
-            destination.write_bytes(content)
+            size_bytes = 0
+            try:
+                with destination.open("wb") as output_file:
+                    while True:
+                        chunk = await uploaded_file.read(UPLOAD_STREAM_CHUNK_SIZE)
+                        if not chunk:
+                            break
+
+                        size_bytes += len(chunk)
+                        if size_bytes > app_settings.max_upload_bytes:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=(
+                                    f"{uploaded_file.filename or 'File'} exceeds the size limit."
+                                ),
+                            )
+                        output_file.write(chunk)
+            except HTTPException:
+                destination.unlink(missing_ok=True)
+                raise
+            except OSError as exc:
+                destination.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Could not save uploaded file.",
+                ) from exc
+            finally:
+                await uploaded_file.close()
             relative_path = destination.relative_to(app_settings.upload_dir).as_posix()
 
             saved_files.append(
@@ -139,14 +161,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "saved_name": destination.name,
                     "relative_path": relative_path,
                     "preview_url": f"/uploads/{relative_path}",
-                    "size_bytes": len(content),
+                    "size_bytes": size_bytes,
                 }
             )
 
         uploaded_count = len(saved_files)
         saved_folder = target_dir.relative_to(app_settings.upload_dir.parent).as_posix()
         response_payload = {
-            "message": f"Uploaded {uploaded_count} photo(s).",
+            "message": f"Uploaded {uploaded_count} file(s).",
             "uploaded_count": uploaded_count,
             "saved_folder": saved_folder,
             "saved_files": saved_files,

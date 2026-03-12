@@ -12,6 +12,8 @@ from pathlib import Path
 
 import qrcode
 
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm", ".avi"}
+
 
 def sanitize_stem(value: str) -> str:
     stem = value.strip().lower()
@@ -42,6 +44,7 @@ def is_local_client_host(client_host: str | None, local_ip: str) -> bool:
 
 def detect_local_ip() -> str:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(0.5)
     try:
         sock.connect(("8.8.8.8", 80))
         local_ip = sock.getsockname()[0]
@@ -70,10 +73,13 @@ def open_directory_in_file_browser(path: Path) -> None:
     webbrowser.open(resolved.as_uri())
 
 
-def list_uploaded_images(upload_dir: Path, allowed_extensions: set[str]) -> list[dict[str, str]]:
-    images: list[dict[str, str]] = []
+def list_uploaded_images(
+    upload_dir: Path, allowed_extensions: set[str]
+) -> list[dict[str, str | bool]]:
+    images: list[dict[str, str | bool]] = []
     for image_path in sorted(upload_dir.rglob("*"), reverse=True):
-        if not image_path.is_file() or image_path.suffix.lower() not in allowed_extensions:
+        extension = image_path.suffix.lower()
+        if not image_path.is_file() or extension not in allowed_extensions:
             continue
 
         relative_path = image_path.relative_to(upload_dir).as_posix()
@@ -82,6 +88,7 @@ def list_uploaded_images(upload_dir: Path, allowed_extensions: set[str]) -> list
                 "name": image_path.name,
                 "relative_path": relative_path,
                 "url": f"/uploads/{relative_path}",
+                "is_video": extension in VIDEO_EXTENSIONS,
             }
         )
 

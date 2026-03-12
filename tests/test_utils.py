@@ -52,11 +52,15 @@ def test_list_uploaded_images_returns_recursive_image_paths_only(tmp_path: Path)
     upload_dir = tmp_path / "uploads"
     (upload_dir / "2026-03-10").mkdir(parents=True)
     (upload_dir / "2026-03-10" / "cat.jpg").write_bytes(b"img")
+    (upload_dir / "2026-03-10" / "clip.mp4").write_bytes(b"video")
     (upload_dir / "2026-03-10" / "notes.txt").write_bytes(b"text")
 
-    images = list_uploaded_images(upload_dir, {".jpg", ".png"})
+    images = list_uploaded_images(upload_dir, {".jpg", ".png", ".mp4"})
 
-    assert len(images) == 1
-    assert images[0]["name"] == "cat.jpg"
-    assert images[0]["relative_path"] == "2026-03-10/cat.jpg"
-    assert images[0]["url"] == "/uploads/2026-03-10/cat.jpg"
+    assert len(images) == 2
+    assert images[0]["name"] == "clip.mp4"
+    assert images[0]["is_video"] is True
+    assert images[1]["name"] == "cat.jpg"
+    assert images[1]["relative_path"] == "2026-03-10/cat.jpg"
+    assert images[1]["url"] == "/uploads/2026-03-10/cat.jpg"
+    assert images[1]["is_video"] is False

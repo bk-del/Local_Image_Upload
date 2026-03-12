@@ -23,8 +23,8 @@ def test_index_page_renders_qr_and_phone_url(monkeypatch, tmp_path: Path) -> Non
     assert "data:image/png;base64" in response.text
     assert "Open Photo Folder" in response.text
     assert "View Uploaded Photos" in response.text
-    assert "Scan to send photos from your phone" in response.text
-    assert "Waiting for photos from phone." in response.text
+    assert "Scan to send photos/videos from your phone." in response.text
+    assert "Waiting for photos/videos from phone." in response.text
     assert 'id="upload-form"' not in response.text
 
 
@@ -36,8 +36,8 @@ def test_index_hides_open_folder_button_for_remote_clients(monkeypatch, tmp_path
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "Send Photos to Computer" in response.text
-    assert "Choose Photos" in response.text
+    assert "Send Photos/Videos to Computer" in response.text
+    assert "Choose Photos/Videos" in response.text
     assert 'id="upload-form"' in response.text
     assert "Open Photo Folder" not in response.text
     assert "View Photos Stored on Computer" in response.text
@@ -48,6 +48,7 @@ def test_gallery_page_shows_uploaded_images(monkeypatch, tmp_path: Path) -> None
     upload_day_dir = tmp_path / "uploads" / "2026-03-11"
     upload_day_dir.mkdir(parents=True)
     (upload_day_dir / "beach.png").write_bytes(b"fake-image")
+    (upload_day_dir / "clip.mp4").write_bytes(b"fake-video")
     (upload_day_dir / "notes.txt").write_bytes(b"text-file")
 
     client = build_client(tmp_path)
@@ -57,6 +58,8 @@ def test_gallery_page_shows_uploaded_images(monkeypatch, tmp_path: Path) -> None
     assert "beach.png" in response.text
     assert "2026-03-11/beach.png" in response.text
     assert "/uploads/2026-03-11/beach.png" in response.text
+    assert "clip.mp4" in response.text
+    assert '<video controls preload="metadata">' in response.text
     assert "notes.txt" not in response.text
 
 
@@ -146,6 +149,21 @@ def test_upload_saves_file_into_dated_folder(monkeypatch, tmp_path: Path) -> Non
     assert saved_file.exists()
 
 
+def test_upload_accepts_video_file(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr("app.main.detect_local_ip", lambda: "192.168.1.50")
+    client = build_client(tmp_path)
+
+    response = client.post(
+        "/upload",
+        files=[("files", ("clip.mp4", b"video-bytes", "video/mp4"))],
+        data={"names": "family-video"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["saved_files"][0]["saved_name"] == "family-video.mp4"
+
+
 def test_upload_uses_suffix_for_name_collision(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr("app.main.detect_local_ip", lambda: "192.168.1.50")
     client = build_client(tmp_path)
@@ -197,3 +215,25 @@ def test_upload_rejects_oversized_file(monkeypatch, tmp_path: Path) -> None:
 
     assert response.status_code == 400
     assert "size limit" in response.json()["detail"]
+
+
+def test_upload_rejects_oversized_video_and_deletes_partial_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr("app.main.detect_local_ip", lambda: "192.168.1.50")
+    settings = Settings(
+        upload_dir=tmp_path / "uploads",
+        open_browser_on_start=False,
+        max_upload_bytes=4,
+    )
+    client = TestClient(create_app(settings))
+
+    response = client.post(
+        "/upload",
+        files=[("files", ("large.mp4", b"12345", "video/mp4"))],
+        data={"names": "large-video"},
+    )
+
+    assert response.status_code == 400
+    assert "size limit" in response.json()["detail"]
+    assert not list((tmp_path / "uploads").rglob("*.mp4"))

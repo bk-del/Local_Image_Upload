@@ -13,7 +13,7 @@
           <p class="eyebrow">Uploaded photos</p>
           <h1>Gallery</h1>
           <p class="lede">
-            Browse photos stored on this computer. Opening an image loads it from the computer.
+            Browse photos/videos stored on this computer. Opening a file loads it from the computer.
           </p>
           <div class="hero-actions">
             <a class="secondary-button" href="/">Back to upload</a>
@@ -25,11 +25,20 @@
         {% if images %}
           <div class="gallery-grid">
             {% for image in images %}
-              <a class="gallery-item" href="{{ image.url }}" target="_blank" rel="noopener">
-                <img src="{{ image.url }}" alt="{{ image.name }}" loading="lazy" />
+              <article class="gallery-item">
+                {% if image.is_video %}
+                  <video controls preload="metadata">
+                    <source src="{{ image.url }}" />
+                  </video>
+                {% else %}
+                  <img src="{{ image.url }}" alt="{{ image.name }}" loading="lazy" />
+                {% endif %}
                 <p class="gallery-name">{{ image.name }}</p>
                 <p class="gallery-path">{{ image.relative_path }}</p>
-              </a>
+                <a class="gallery-open-link" href="{{ image.url }}" target="_blank" rel="noopener">
+                  Open full file
+                </a>
+              </article>
             {% endfor %}
           </div>
         {% else %}

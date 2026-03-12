@@ -107,7 +107,7 @@ const showConfirmation = (payload) => {
     return;
   }
 
-  toPhoneConfirmationSummary.textContent = `Staged ${payload.uploaded_count} file(s) for phone download.`;
+  toPhoneConfirmationSummary.textContent = `Sent ${payload.uploaded_count} file(s) to phone download page.`;
   toPhoneConfirmationFolder.textContent = `Saved to: ${payload.saved_folder}`;
   toPhoneConfirmationLink.textContent = `Phone page: ${payload.phone_download_url}`;
   toPhoneConfirmationFiles.innerHTML = "";
@@ -151,7 +151,7 @@ const initToPhoneForm = () => {
 
     const files = Array.from(toPhoneFileInput.files || []);
     if (!files.length) {
-      setStatus("Select at least one photo or video to stage.", "error");
+      setStatus("Select at least one photo or video to send.", "error");
       return;
     }
 
@@ -170,7 +170,7 @@ const initToPhoneForm = () => {
     });
 
     toPhoneSubmitButton.disabled = true;
-    setStatus("Staging files for phone download...");
+    setStatus("Sending files to phone...");
     clearConfirmation();
 
     try {
@@ -180,7 +180,7 @@ const initToPhoneForm = () => {
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.detail || "Could not stage files.");
+        throw new Error(payload.detail || "Could not send files to phone.");
       }
 
       setStatus(payload.message, "success");
@@ -188,7 +188,7 @@ const initToPhoneForm = () => {
       toPhoneForm.reset();
       refreshPreviews();
     } catch (error) {
-      setStatus(error.message || "Could not stage files.", "error");
+      setStatus(error.message || "Could not send files to phone.", "error");
     } finally {
       toPhoneSubmitButton.disabled = false;
     }

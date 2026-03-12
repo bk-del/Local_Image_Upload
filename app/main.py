@@ -367,7 +367,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         saved_folder = target_dir.relative_to(app_settings.upload_dir.parent).as_posix()
         return JSONResponse(
             {
-                "message": f"Staged {uploaded_count} file(s) for phone download.",
+                "message": f"Sent {uploaded_count} file(s) to phone download page.",
                 "uploaded_count": uploaded_count,
                 "saved_folder": saved_folder,
                 "saved_files": saved_files,

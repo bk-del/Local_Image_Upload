@@ -1,9 +1,7 @@
-const fileInput = document.getElementById("file-input");
-const previewList = document.getElementById("preview-list");
-const uploadForm = document.getElementById("upload-form");
-const submitButton = document.getElementById("submit-button");
+const POLL_INTERVAL_MS = 3000;
 const statusBox = document.getElementById("status");
 const openUploadsButton = document.getElementById("open-uploads-button");
+const monitorState = document.getElementById("monitor-state");
 const confirmationBox = document.getElementById("upload-confirmation");
 const confirmationSummary = document.getElementById("confirmation-summary");
 const confirmationFolder = document.getElementById("confirmation-folder");
@@ -20,12 +18,11 @@ const formatBytes = (bytes) => {
 };
 
 const setStatus = (message, kind = "") => {
+  if (!statusBox) {
+    return;
+  }
   statusBox.textContent = message;
   statusBox.className = `status ${kind}`.trim();
-};
-
-const clearPreviews = () => {
-  previewList.innerHTML = "";
 };
 
 const clearConfirmation = () => {
@@ -64,7 +61,7 @@ const buildConfirmationItem = (item) => {
 };
 
 const showConfirmation = (payload) => {
-  if (!confirmationBox) {
+  if (!confirmationBox || !confirmationSummary || !confirmationFolder || !confirmationFiles) {
     return;
   }
 
@@ -77,63 +74,11 @@ const showConfirmation = (payload) => {
   confirmationBox.hidden = false;
 };
 
-const buildPreview = (file, index) => {
-  const item = document.createElement("article");
-  item.className = "preview-item";
-
-  const thumb = document.createElement("div");
-  thumb.className = "preview-thumb";
-
-  const image = document.createElement("img");
-  image.src = URL.createObjectURL(file);
-  image.alt = file.name;
-  thumb.appendChild(image);
-
-  const meta = document.createElement("div");
-  meta.className = "preview-meta";
-
-  const filename = document.createElement("p");
-  filename.textContent = file.name;
-
-  const fileSize = document.createElement("p");
-  fileSize.className = "file-size";
-  fileSize.textContent = formatBytes(file.size);
-
-  const nameField = document.createElement("input");
-  nameField.type = "text";
-  nameField.name = "custom-name";
-  nameField.dataset.index = index;
-  nameField.maxLength = 120;
-  nameField.placeholder = "Optional custom filename";
-
-  meta.append(filename, fileSize, nameField);
-  item.append(thumb, meta);
-  return item;
-};
-
-const refreshPreviews = () => {
-  clearPreviews();
-  const files = Array.from(fileInput.files || []);
-
-  if (!files.length) {
-    submitButton.disabled = true;
+const initOpenUploadsButton = () => {
+  if (!openUploadsButton) {
     return;
   }
 
-  files.forEach((file, index) => {
-    previewList.appendChild(buildPreview(file, index));
-  });
-
-  submitButton.disabled = false;
-};
-
-fileInput.addEventListener("change", () => {
-  setStatus("");
-  clearConfirmation();
-  refreshPreviews();
-});
-
-if (openUploadsButton) {
   openUploadsButton.addEventListener("click", async () => {
     openUploadsButton.disabled = true;
     setStatus("Opening uploads folder...");
@@ -151,54 +96,160 @@ if (openUploadsButton) {
       openUploadsButton.disabled = false;
     }
   });
-}
+};
 
-uploadForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const files = Array.from(fileInput.files || []);
-  if (!files.length) {
-    setStatus("Select at least one image before uploading.", "error");
+const initPhoneUploadForm = () => {
+  const fileInput = document.getElementById("file-input");
+  const previewList = document.getElementById("preview-list");
+  const uploadForm = document.getElementById("upload-form");
+  const submitButton = document.getElementById("submit-button");
+  if (!fileInput || !previewList || !uploadForm || !submitButton) {
     return;
   }
 
-  const maxBytes = (window.APP_CONFIG?.maxUploadMb || 15) * 1024 * 1024;
-  const tooLarge = files.find((file) => file.size > maxBytes);
-  if (tooLarge) {
-    setStatus(`${tooLarge.name} exceeds the upload size limit.`, "error");
-    return;
-  }
+  const clearPreviews = () => {
+    previewList.innerHTML = "";
+  };
 
-  const formData = new FormData();
-  const customInputs = Array.from(document.querySelectorAll('input[name="custom-name"]'));
+  const buildPreview = (file, index) => {
+    const item = document.createElement("article");
+    item.className = "preview-item";
 
-  files.forEach((file, index) => {
-    formData.append("files", file, file.name);
-    formData.append("names", customInputs[index]?.value?.trim() || "");
-  });
+    const thumb = document.createElement("div");
+    thumb.className = "preview-thumb";
 
-  submitButton.disabled = true;
-  setStatus("Sending photos to computer...");
-  clearConfirmation();
+    const image = document.createElement("img");
+    image.src = URL.createObjectURL(file);
+    image.alt = file.name;
+    thumb.appendChild(image);
 
-  try {
-    const response = await fetch("/upload", {
-      method: "POST",
-      body: formData,
-    });
+    const meta = document.createElement("div");
+    meta.className = "preview-meta";
 
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.detail || "Upload failed.");
+    const filename = document.createElement("p");
+    filename.textContent = file.name;
+
+    const fileSize = document.createElement("p");
+    fileSize.className = "file-size";
+    fileSize.textContent = formatBytes(file.size);
+
+    const nameField = document.createElement("input");
+    nameField.type = "text";
+    nameField.name = "custom-name";
+    nameField.dataset.index = index;
+    nameField.maxLength = 120;
+    nameField.placeholder = "Optional custom filename";
+
+    meta.append(filename, fileSize, nameField);
+    item.append(thumb, meta);
+    return item;
+  };
+
+  const refreshPreviews = () => {
+    clearPreviews();
+    const files = Array.from(fileInput.files || []);
+
+    if (!files.length) {
+      submitButton.disabled = true;
+      return;
     }
 
-    setStatus(payload.message, "success");
-    showConfirmation(payload);
-    uploadForm.reset();
-    clearPreviews();
-  } catch (error) {
-    setStatus(error.message || "Upload failed.", "error");
-  } finally {
+    files.forEach((file, index) => {
+      previewList.appendChild(buildPreview(file, index));
+    });
+
     submitButton.disabled = false;
+  };
+
+  fileInput.addEventListener("change", () => {
+    setStatus("");
+    clearConfirmation();
+    refreshPreviews();
+  });
+
+  uploadForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) {
+      setStatus("Select at least one image before uploading.", "error");
+      return;
+    }
+
+    const maxBytes = (window.APP_CONFIG?.maxUploadMb || 15) * 1024 * 1024;
+    const tooLarge = files.find((file) => file.size > maxBytes);
+    if (tooLarge) {
+      setStatus(`${tooLarge.name} exceeds the upload size limit.`, "error");
+      return;
+    }
+
+    const formData = new FormData();
+    const customInputs = Array.from(document.querySelectorAll('input[name="custom-name"]'));
+
+    files.forEach((file, index) => {
+      formData.append("files", file, file.name);
+      formData.append("names", customInputs[index]?.value?.trim() || "");
+    });
+
+    submitButton.disabled = true;
+    setStatus("Sending photos to computer...");
+    clearConfirmation();
+
+    try {
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Upload failed.");
+      }
+
+      setStatus(payload.message, "success");
+      showConfirmation(payload);
+      uploadForm.reset();
+      clearPreviews();
+    } catch (error) {
+      setStatus(error.message || "Upload failed.", "error");
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+};
+
+const initDesktopMonitor = () => {
+  if (!monitorState) {
+    return;
   }
-});
+
+  let latestEventId = 0;
+  const refreshUploadStatus = async () => {
+    try {
+      const response = await fetch("/upload-status");
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Could not load upload status.");
+      }
+
+      const latestUpload = payload.latest_upload;
+      if (!latestUpload || latestUpload.event_id <= latestEventId) {
+        return;
+      }
+
+      latestEventId = latestUpload.event_id;
+      monitorState.textContent = `Received ${latestUpload.uploaded_count} photo(s) from phone.`;
+      setStatus(latestUpload.message, "success");
+      showConfirmation(latestUpload);
+    } catch (error) {
+      setStatus(error.message || "Could not load upload status.", "error");
+    }
+  };
+
+  refreshUploadStatus();
+  window.setInterval(refreshUploadStatus, POLL_INTERVAL_MS);
+};
+
+initOpenUploadsButton();
+initPhoneUploadForm();
+initDesktopMonitor();

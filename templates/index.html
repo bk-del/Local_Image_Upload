@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
   </head>
   <body class="{% if can_open_uploads %}view-local{% else %}view-remote{% endif %}">
+    <aside id="presence-chip" class="presence-chip">
+      <p class="presence-title">Connection status</p>
+      <p id="presence-state" class="presence-state">Checking...</p>
+      <p id="presence-detail" class="presence-detail">Waiting for device heartbeat.</p>
+    </aside>
+
     <main class="page-shell">
       <section class="hero-card">
         <div class="hero-copy">
@@ -41,11 +47,13 @@
           {% endif %}
           <div class="hero-actions">
             {% if can_open_uploads %}
+              <a class="secondary-button" href="/to-phone">Send Files to Phone</a>
               <button id="open-uploads-button" type="button" class="secondary-button">
                 Open Photo Folder
               </button>
               <a class="secondary-button" href="/gallery">View Uploaded Photos</a>
             {% else %}
+              <a class="secondary-button" href="/to-phone">Download Files from Computer</a>
               <a class="secondary-button" href="/gallery">View Photos Stored on Computer</a>
             {% endif %}
           </div>
@@ -92,8 +100,11 @@
     <script>
       window.APP_CONFIG = {
         maxUploadMb: {{ max_upload_mb }},
+        presencePage: "index",
+        presenceHeartbeatSeconds: {{ presence_heartbeat_seconds }},
       };
     </script>
+    <script src="{{ url_for('static', path='presence.js') }}" defer></script>
     <script src="{{ url_for('static', path='app.js') }}" defer></script>
   </body>
 </html>

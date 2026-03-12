@@ -19,6 +19,63 @@ body {
     linear-gradient(180deg, #0b1020 0%, #111a31 100%);
 }
 
+.presence-chip {
+  position: fixed;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 20;
+  width: min(340px, calc(100vw - 1.4rem));
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 22px rgba(2, 6, 23, 0.35);
+}
+
+.presence-chip.connected {
+  border-color: rgba(134, 239, 172, 0.6);
+}
+
+.presence-chip.disconnected {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.presence-title,
+.presence-state,
+.presence-detail {
+  margin: 0;
+}
+
+.presence-title {
+  color: #9fb3d9;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.presence-state {
+  font-size: 0.96rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+}
+
+.presence-chip.connected .presence-state {
+  color: #86efac;
+}
+
+.presence-chip.disconnected .presence-state {
+  color: #fecaca;
+}
+
+.presence-detail {
+  margin-top: 0.2rem;
+  color: #dbeafe;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -357,6 +414,12 @@ h1 {
 }
 
 @media (max-width: 680px) {
+  .presence-chip {
+    top: 0.55rem;
+    right: 0.55rem;
+    width: min(100%, calc(100vw - 1.1rem));
+  }
+
   .page-shell {
     width: min(100%, calc(100% - 1rem));
     padding-top: 0.75rem;

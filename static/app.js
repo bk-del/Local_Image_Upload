@@ -75,7 +75,7 @@ const showConfirmation = (payload) => {
     return;
   }
 
-  confirmationSummary.textContent = `Uploaded ${payload.uploaded_count} photo(s) successfully.`;
+  confirmationSummary.textContent = `Uploaded ${payload.uploaded_count} file(s) successfully.`;
   confirmationFolder.textContent = `Saved to: ${payload.saved_folder}`;
   confirmationFiles.innerHTML = "";
   payload.saved_files.forEach((item) => {

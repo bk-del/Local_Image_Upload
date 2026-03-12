@@ -4,6 +4,8 @@ Simple local tool to send photos/videos from a phone to a computer on the same W
 
 - Phone view: **Send Photos/Videos to Computer**
 - Computer view: QR code, **Open Photo Folder**, **View Uploaded Photos**, and live upload confirmation
+- Separate page: **Send Files to Phone** (isolated from phone-to-computer flow)
+- Live top-right status on both pages: shows whether the other device is currently connected
 
 No cloud, no database, no accounts.
 
@@ -41,24 +43,42 @@ The browser opens automatically on the computer.
 
 ## How to use
 
+### Phone -> Computer
+
 1. Start the app on the computer.
 2. On the computer page, scan the QR code with your phone.
 3. On the phone page, tap **Choose Photos/Videos**.
 4. (Optional) rename files.
 5. Tap **Send Photos/Videos to Computer**.
 6. On the computer page, watch the confirmation panel update automatically.
+7. Check the top-right status: **Connected** means a phone is actively on the app.
+
+### Computer -> Phone (separate screen)
+
+1. On the computer main page, click **Send Files to Phone**.
+2. Click **Choose Files on Computer** and select photos/videos from any folder.
+3. (Optional) rename files.
+4. Click **Stage and Send to Phone**.
+5. Use the page QR code (or URL) on the phone to open `/to-phone`.
+6. On the phone `/to-phone` page, tap **Open / Download** on a file.
+7. Both screens show top-right live connection status.
 
 ## Where files go
 
-Uploaded files are saved to:
+Phone -> computer uploads are saved to:
 
 - `uploads/YYYY-MM-DD/`
+
+Computer -> phone staged files are saved to:
+
+- `uploads/to-phone/YYYY-MM-DD/`
 
 Examples:
 
 - `uploads/2026-03-12/photo.jpg`
 - `uploads/2026-03-12/photo_1.jpg` (name collision)
 - `uploads/2026-03-12/video.mp4`
+- `uploads/to-phone/2026-03-12/video.mp4`
 
 Rules:
 
@@ -73,6 +93,7 @@ Rules:
 
 - **Open Photo Folder**: opens top-level `uploads/` on the computer
 - **View Uploaded Photos**: opens gallery (`/gallery`) of photos stored on the computer
+- **Send Files to Phone**: opens isolated page to stage files for phone download (`/to-phone`)
 
 `Open Photo Folder` is local-only and cannot be triggered by phone clients.
 

@@ -27,6 +27,40 @@ def get_extension(filename: str) -> str:
     return Path(filename).suffix.lower()
 
 
+def infer_device_label(user_agent: str) -> str:
+    ua = user_agent.lower()
+
+    if "iphone" in ua:
+        device = "iPhone"
+    elif "ipad" in ua:
+        device = "iPad"
+    elif "android" in ua:
+        device = "Android"
+    elif "windows" in ua:
+        device = "Windows"
+    elif "macintosh" in ua or "mac os x" in ua:
+        device = "macOS"
+    elif "linux" in ua:
+        device = "Linux"
+    else:
+        device = "Unknown"
+
+    if "edg/" in ua or "edge/" in ua:
+        browser = "Edge"
+    elif "opr/" in ua or "opera" in ua:
+        browser = "Opera"
+    elif "firefox/" in ua:
+        browser = "Firefox"
+    elif "chrome/" in ua and "edg/" not in ua and "opr/" not in ua:
+        browser = "Chrome"
+    elif "safari/" in ua and "chrome/" not in ua:
+        browser = "Safari"
+    else:
+        browser = "Browser"
+
+    return f"{device} {browser}"
+
+
 def is_local_client_host(client_host: str | None, local_ip: str) -> bool:
     if not client_host:
         return False
@@ -74,9 +108,12 @@ def open_directory_in_file_browser(path: Path) -> None:
 
 
 def list_uploaded_images(
-    upload_dir: Path, allowed_extensions: set[str]
+    upload_dir: Path,
+    allowed_extensions: set[str],
+    url_prefix: str = "/uploads",
 ) -> list[dict[str, str | bool]]:
     images: list[dict[str, str | bool]] = []
+    normalized_prefix = url_prefix.rstrip("/")
     for image_path in sorted(upload_dir.rglob("*"), reverse=True):
         extension = image_path.suffix.lower()
         if not image_path.is_file() or extension not in allowed_extensions:
@@ -87,7 +124,7 @@ def list_uploaded_images(
             {
                 "name": image_path.name,
                 "relative_path": relative_path,
-                "url": f"/uploads/{relative_path}",
+                "url": f"{normalized_prefix}/{relative_path}",
                 "is_video": extension in VIDEO_EXTENSIONS,
             }
         )

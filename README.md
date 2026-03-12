@@ -41,7 +41,8 @@ uv sync --group dev
 
 From the repo root:
 
-```bash
+```
+bash
 uv run python -m app.main
 ```
 

@@ -3,6 +3,11 @@ const previewList = document.getElementById("preview-list");
 const uploadForm = document.getElementById("upload-form");
 const submitButton = document.getElementById("submit-button");
 const statusBox = document.getElementById("status");
+const openUploadsButton = document.getElementById("open-uploads-button");
+const confirmationBox = document.getElementById("upload-confirmation");
+const confirmationSummary = document.getElementById("confirmation-summary");
+const confirmationFolder = document.getElementById("confirmation-folder");
+const confirmationFiles = document.getElementById("confirmation-files");
 
 const formatBytes = (bytes) => {
   if (bytes < 1024) {
@@ -21,6 +26,55 @@ const setStatus = (message, kind = "") => {
 
 const clearPreviews = () => {
   previewList.innerHTML = "";
+};
+
+const clearConfirmation = () => {
+  if (!confirmationBox) {
+    return;
+  }
+  confirmationBox.hidden = true;
+  confirmationSummary.textContent = "";
+  confirmationFolder.textContent = "";
+  confirmationFiles.innerHTML = "";
+};
+
+const buildConfirmationItem = (item) => {
+  const card = document.createElement("article");
+  card.className = "confirmation-item";
+
+  const thumb = document.createElement("img");
+  thumb.src = item.preview_url;
+  thumb.alt = item.saved_name;
+  thumb.loading = "lazy";
+
+  const info = document.createElement("div");
+  info.className = "confirmation-meta";
+
+  const name = document.createElement("p");
+  name.className = "confirmation-name";
+  name.textContent = item.saved_name;
+
+  const path = document.createElement("p");
+  path.className = "confirmation-path";
+  path.textContent = item.relative_path;
+
+  info.append(name, path);
+  card.append(thumb, info);
+  return card;
+};
+
+const showConfirmation = (payload) => {
+  if (!confirmationBox) {
+    return;
+  }
+
+  confirmationSummary.textContent = `Uploaded ${payload.uploaded_count} photo(s) successfully.`;
+  confirmationFolder.textContent = `Saved to: ${payload.saved_folder}`;
+  confirmationFiles.innerHTML = "";
+  payload.saved_files.forEach((item) => {
+    confirmationFiles.appendChild(buildConfirmationItem(item));
+  });
+  confirmationBox.hidden = false;
 };
 
 const buildPreview = (file, index) => {
@@ -75,8 +129,29 @@ const refreshPreviews = () => {
 
 fileInput.addEventListener("change", () => {
   setStatus("");
+  clearConfirmation();
   refreshPreviews();
 });
+
+if (openUploadsButton) {
+  openUploadsButton.addEventListener("click", async () => {
+    openUploadsButton.disabled = true;
+    setStatus("Opening uploads folder...");
+
+    try {
+      const response = await fetch("/open-uploads", { method: "POST" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || "Could not open uploads folder.");
+      }
+      setStatus(payload.message, "success");
+    } catch (error) {
+      setStatus(error.message || "Could not open uploads folder.", "error");
+    } finally {
+      openUploadsButton.disabled = false;
+    }
+  });
+}
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -103,7 +178,8 @@ uploadForm.addEventListener("submit", async (event) => {
   });
 
   submitButton.disabled = true;
-  setStatus("Uploading images...");
+  setStatus("Sending photos to computer...");
+  clearConfirmation();
 
   try {
     const response = await fetch("/upload", {
@@ -116,8 +192,8 @@ uploadForm.addEventListener("submit", async (event) => {
       throw new Error(payload.detail || "Upload failed.");
     }
 
-    const savedFiles = payload.saved_files.map((item) => item.saved_name).join(", ");
-    setStatus(`${payload.message} Saved as: ${savedFiles}`, "success");
+    setStatus(payload.message, "success");
+    showConfirmation(payload);
     uploadForm.reset();
     clearPreviews();
   } catch (error) {

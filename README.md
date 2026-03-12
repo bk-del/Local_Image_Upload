@@ -1,82 +1,113 @@
 # Local Image Drop
 
-A local FastAPI app for sending images from a phone browser to a computer on the same Wi-Fi network. The page shows a QR code, previews selected images, supports optional per-image renaming, and saves files into dated upload folders.
+Local Image Drop is a small local-network photo uploader:
+- Run it on your computer.
+- Scan a QR code from your phone on the same Wi-Fi.
+- Upload one or more photos from the phone browser.
+- Optionally rename each photo before upload.
+- Files are saved to `uploads/YYYY-MM-DD/`.
 
-## What is included
+No cloud services, no database, no auth setup.
 
-- FastAPI backend
-- Plain HTML, CSS, and JavaScript frontend
-- QR code display for quick phone access
-- Safe filename sanitization and collision handling
-- Date-based upload folders
-- Unit tests with pytest
-- Pre-commit hooks for Ruff, Black, isort, and Bandit
-- GitHub Actions CI
-- One-command launch scripts for Windows and macOS/Linux
-- uv-compatible project metadata; generate uv.lock in a networked environment with `uv lock` or `uv sync`
+## Safety warning (important)
 
-## Project layout
+This app is intentionally minimal and has no login or protection layer.
 
-```text
-local-image-drop/
-├─ .github/
-│  └─ workflows/
-│     └─ ci.yml
-├─ app/
-│  ├─ __init__.py
-│  ├─ config.py
-│  ├─ main.py
-│  └─ utils.py
-├─ static/
-│  ├─ app.js
-│  └─ style.css
-├─ templates/
-│  └─ index.html
-├─ tests/
-│  ├─ conftest.py
-│  ├─ test_app.py
-│  └─ test_utils.py
-├─ .gitignore
-├─ .pre-commit-config.yaml
-├─ .python-version
-├─ LLM_HANDOFF.md
-├─ PROMPT_FOR_NEW_LLM.md
-├─ README.md
-├─ pyproject.toml
-├─ start.bat
-└─ start.sh
+- No authentication: anyone on the same network who can reach the URL can use it.
+- No HTTPS/TLS: traffic is plain local HTTP.
+- No user accounts or permission controls.
+
+Use it only on a trusted home network.
+
+Do:
+- use your private home Wi-Fi
+- run only when needed
+- stop the app when finished
+
+Do not:
+- use on public Wi-Fi (coffee shops, hotels, airports)
+- expose this app to the internet
+- port-forward router traffic to this app
+
+## Setup once
+
+From the repo root:
+
+```bash
+uv sync --group dev
 ```
 
-## Run locally
+## Run each time
 
-### Preferred
+From the repo root:
 
 ```bash
 uv run python -m app.main
 ```
 
-### Convenience scripts
+When it starts, it opens your desktop browser automatically.
 
-```bash
-./start.sh
-```
+## Windows wrappers
 
-or on Windows:
+If you prefer double-click scripts on Windows:
 
-```bat
-start.bat
-```
+- One-time setup: `setup.bat`
+- Run app: `run.bat`
 
-The app opens in your desktop browser at `http://127.0.0.1:8000` and shows a QR code for the phone URL.
+(`start.bat` is kept as a compatibility wrapper to `run.bat`.)
 
-## Install development tooling
+## Phone usage on same Wi-Fi
 
-```bash
-uv sync --group dev
-uv run pre-commit install
-```
+1. Start the app on the computer.
+2. Desktop page opens and shows a QR code and phone URL.
+3. Scan the QR code from your phone camera.
+4. Select photos.
+5. Optionally enter custom names.
+6. Tap upload.
 
-## Run checks manually
+The QR code points to your computer's local LAN URL (for example `http://192.168.1.50:8000`).
+
+For safety, make sure both devices are on your trusted home Wi-Fi (not a public/shared network).
+
+## Where photos are saved
+
+Photos are saved under top-level `uploads/` with date-based folders:
+
+- `uploads/2026-03-11/photo.jpg`
+- `uploads/2026-03-11/photo_1.jpg` (collision-safe naming)
+
+Behavior:
+- extension preserved
+- filename sanitized
+- duplicate names get `_1`, `_2`, etc.
+- image files only
+
+## Desktop page actions
+
+Main page is intentionally simple:
+- Select photos
+- Optional photo names
+- Upload photos
+- `Open Photo Folder` (desktop-local access only)
+- `View Uploaded Photos` (gallery page)
+- Upload confirmation panel with:
+  - success message
+  - upload count
+  - saved folder path
+  - thumbnails of newly uploaded photos
+  - final saved filenames
+
+`Open Photo Folder` opens the top-level `uploads/` folder in File Explorer (Windows). Remote phone clients cannot trigger this route.
+
+## Gallery page
+
+`/gallery` shows uploaded photos recursively from `uploads/`:
+- thumbnail preview
+- saved filename
+- relative subpath
+- click to open full image in browser
+
+## Quality checks
 
 ```bash
 uv run ruff check .
@@ -86,18 +117,12 @@ uv run bandit -c pyproject.toml -r app
 uv run pytest
 ```
 
-## Phone workflow
+## Tooling included
 
-1. Start the app on the computer.
-2. Open the desktop browser page.
-3. Scan the QR code with the phone.
-4. Select multiple images on the phone.
-5. Optionally type a custom filename for each image.
-6. Upload the files.
-7. Find the files in `uploads/YYYY-MM-DD/`.
-
-## Notes
-
-- The app listens on `0.0.0.0` so it is reachable on the local network.
-- A local firewall prompt may appear on first run. Allow local network access.
-- The upload directory is created automatically.
+- Ruff
+- Black
+- isort
+- Bandit
+- pytest
+- pre-commit
+- GitHub Actions CI

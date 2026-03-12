@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import base64
 import io
+import ipaddress
+import os
 import re
 import socket
+import sys
+import webbrowser
 from pathlib import Path
 
 import qrcode
@@ -19,6 +23,21 @@ def sanitize_stem(value: str) -> str:
 
 def get_extension(filename: str) -> str:
     return Path(filename).suffix.lower()
+
+
+def is_local_client_host(client_host: str | None, local_ip: str) -> bool:
+    if not client_host:
+        return False
+
+    if client_host == "localhost":
+        return True
+
+    try:
+        address = ipaddress.ip_address(client_host)
+    except ValueError:
+        return False
+
+    return address.is_loopback or client_host == local_ip
 
 
 def detect_local_ip() -> str:
@@ -40,6 +59,33 @@ def ensure_directory(path: Path) -> Path:
 
 def dated_upload_dir(base_dir: Path, folder_name: str) -> Path:
     return ensure_directory(base_dir / folder_name)
+
+
+def open_directory_in_file_browser(path: Path) -> None:
+    resolved = path.resolve()
+    if sys.platform.startswith("win"):
+        os.startfile(str(resolved))  # nosec B606
+        return
+
+    webbrowser.open(resolved.as_uri())
+
+
+def list_uploaded_images(upload_dir: Path, allowed_extensions: set[str]) -> list[dict[str, str]]:
+    images: list[dict[str, str]] = []
+    for image_path in sorted(upload_dir.rglob("*"), reverse=True):
+        if not image_path.is_file() or image_path.suffix.lower() not in allowed_extensions:
+            continue
+
+        relative_path = image_path.relative_to(upload_dir).as_posix()
+        images.append(
+            {
+                "name": image_path.name,
+                "relative_path": relative_path,
+                "url": f"/uploads/{relative_path}",
+            }
+        )
+
+    return images
 
 
 def unique_path(directory: Path, desired_stem: str, extension: str) -> Path:

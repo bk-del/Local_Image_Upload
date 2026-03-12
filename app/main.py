@@ -17,13 +17,24 @@ from app.utils import (
     detect_local_ip,
     ensure_directory,
     get_extension,
+    is_local_client_host,
+    list_uploaded_images,
     make_qr_data_uri,
+    open_directory_in_file_browser,
     sanitize_stem,
     unique_path,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def is_local_machine_request(request: Request, local_ip: str | None = None) -> bool:
+    if request.client is None:
+        return False
+
+    resolved_local_ip = local_ip or detect_local_ip()
+    return is_local_client_host(request.client.host, resolved_local_ip)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,12 +44,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title=app_settings.app_name)
     app.state.settings = app_settings
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+    app.mount("/uploads", StaticFiles(directory=str(app_settings.upload_dir)), name="uploads")
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         local_ip = detect_local_ip()
         network_url = f"http://{local_ip}:{app_settings.port}"
         qr_data_uri = make_qr_data_uri(network_url)
+        can_open_uploads = is_local_machine_request(request, local_ip)
         return TEMPLATES.TemplateResponse(
             request=request,
             name="index.html",
@@ -47,14 +60,42 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "network_url": network_url,
                 "qr_data_uri": qr_data_uri,
                 "max_upload_mb": app_settings.max_upload_bytes // (1024 * 1024),
+                "can_open_uploads": can_open_uploads,
             },
         )
+
+    @app.get("/gallery", response_class=HTMLResponse)
+    async def gallery(request: Request) -> HTMLResponse:
+        images = list_uploaded_images(app_settings.upload_dir, app_settings.allowed_extensions)
+
+        return TEMPLATES.TemplateResponse(
+            request=request,
+            name="gallery.html",
+            context={"app_name": app_settings.app_name, "images": images},
+        )
+
+    @app.post("/open-uploads")
+    async def open_uploads_folder(request: Request) -> JSONResponse:
+        if not is_local_machine_request(request):
+            raise HTTPException(
+                status_code=403,
+                detail="This action is only available on this computer.",
+            )
+
+        uploads_path = ensure_directory(app_settings.upload_dir).resolve()
+        try:
+            open_directory_in_file_browser(uploads_path)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail="Could not open uploads folder.") from exc
+
+        return JSONResponse({"message": "Opened uploads folder.", "path": str(uploads_path)})
 
     @app.post("/upload")
     async def upload_images(
         files: Annotated[list[UploadFile], File(...)],
-        names: list[str] = Form(default=[]),
+        names: Annotated[list[str] | None, Form()] = None,
     ) -> JSONResponse:
+        resolved_names = names or []
         saved_files: list[dict[str, str | int]] = []
         target_dir = dated_upload_dir(app_settings.upload_dir, dt.date.today().isoformat())
 
@@ -73,23 +114,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     detail=f"{uploaded_file.filename or 'File'} exceeds the size limit.",
                 )
 
-            custom_name = names[index].strip() if index < len(names) else ""
+            custom_name = resolved_names[index].strip() if index < len(resolved_names) else ""
             desired_stem = custom_name or Path(uploaded_file.filename or "image").stem
             destination = unique_path(target_dir, sanitize_stem(desired_stem), extension)
             destination.write_bytes(content)
+            relative_path = destination.relative_to(app_settings.upload_dir).as_posix()
 
             saved_files.append(
                 {
                     "original_name": uploaded_file.filename or "",
                     "saved_name": destination.name,
-                    "relative_path": str(destination.relative_to(app_settings.upload_dir.parent)),
+                    "relative_path": relative_path,
+                    "preview_url": f"/uploads/{relative_path}",
                     "size_bytes": len(content),
                 }
             )
 
+        uploaded_count = len(saved_files)
+        saved_folder = target_dir.relative_to(app_settings.upload_dir.parent).as_posix()
         return JSONResponse(
             {
-                "message": f"Saved {len(saved_files)} image(s).",
+                "message": f"Uploaded {uploaded_count} photo(s).",
+                "uploaded_count": uploaded_count,
+                "saved_folder": saved_folder,
                 "saved_files": saved_files,
                 "target_directory": str(target_dir),
             }

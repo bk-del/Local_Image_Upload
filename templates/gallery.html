@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_name }} - Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Uploaded photos</p>
+          <h1>Gallery</h1>
+          <p class="lede">
+            Browse photos stored on this computer. Opening an image loads it from the computer.
+          </p>
+          <div class="hero-actions">
+            <a class="secondary-button" href="/">Back to upload</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="upload-card">
+        {% if images %}
+          <div class="gallery-grid">
+            {% for image in images %}
+              <a class="gallery-item" href="{{ image.url }}" target="_blank" rel="noopener">
+                <img src="{{ image.url }}" alt="{{ image.name }}" loading="lazy" />
+                <p class="gallery-name">{{ image.name }}</p>
+                <p class="gallery-path">{{ image.relative_path }}</p>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="hint">No uploaded images yet.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

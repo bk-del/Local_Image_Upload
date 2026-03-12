@@ -6,46 +6,81 @@
     <title>{{ app_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}" />
   </head>
-  <body>
+  <body class="{% if can_open_uploads %}view-local{% else %}view-remote{% endif %}">
     <main class="page-shell">
       <section class="hero-card">
         <div class="hero-copy">
-          <p class="eyebrow">Local Wi-Fi image transfer</p>
-          <h1>{{ app_name }}</h1>
-          <p class="lede">
-            Open this page on your phone, preview the images, optionally rename each one,
-            and send them straight to this computer.
-          </p>
+          {% if can_open_uploads %}
+            <p class="eyebrow">Computer view</p>
+            <h1>{{ app_name }}</h1>
+            <p class="lede">Scan to send photos from your phone.</p>
+          {% else %}
+            <p class="eyebrow">Phone view</p>
+            <h1>Send Photos to Computer</h1>
+            <p class="lede">
+              Choose photos on your phone and send them directly to this computer.
+            </p>
+          {% endif %}
           <div class="network-panel">
             <div>
-              <p class="label">Phone URL</p>
+              <p class="label">{% if can_open_uploads %}Phone URL{% else %}Sending to computer{% endif %}</p>
               <a class="network-link" href="{{ network_url }}">{{ network_url }}</a>
             </div>
-            <div class="qr-block">
-              <img src="{{ qr_data_uri }}" alt="QR code for opening the app on a phone" />
-            </div>
+            {% if can_open_uploads %}
+              <div class="qr-block">
+                <img src="{{ qr_data_uri }}" alt="QR code for opening the app on a phone" />
+              </div>
+            {% endif %}
           </div>
-          <p class="hint">
-            Images only. Max size per file: {{ max_upload_mb }} MB.
-          </p>
+          {% if can_open_uploads %}
+            <p class="hint">Images only. Max size per file: {{ max_upload_mb }} MB.</p>
+          {% else %}
+            <p class="hint">
+              Destination is this computer. Images only. Max size per file: {{ max_upload_mb }} MB.
+            </p>
+          {% endif %}
+          <div class="hero-actions">
+            {% if can_open_uploads %}
+              <button id="open-uploads-button" type="button" class="secondary-button">
+                Open Photo Folder
+              </button>
+              <a class="secondary-button" href="/gallery">View Uploaded Photos</a>
+            {% else %}
+              <a class="secondary-button" href="/gallery">View Photos Stored on Computer</a>
+            {% endif %}
+          </div>
         </div>
       </section>
 
       <section class="upload-card">
+        {% if can_open_uploads %}
+          <p class="hint">
+            Uploads sent from your phone will appear below. You can also send test photos from this computer.
+          </p>
+        {% else %}
+          <p class="hint">Choose photos, optionally rename each one, then send to the computer.</p>
+        {% endif %}
         <form id="upload-form" class="upload-form">
           <label class="file-picker">
-            <span>Select images</span>
+            <span>Choose Photos</span>
             <input id="file-input" name="files" type="file" accept="image/*" multiple />
           </label>
 
           <div id="preview-list" class="preview-list"></div>
 
           <button id="submit-button" type="submit" class="submit-button" disabled>
-            Upload images
+            {% if can_open_uploads %}Send Photos to This Computer{% else %}Send Photos to Computer{% endif %}
           </button>
         </form>
 
         <div id="status" class="status" aria-live="polite"></div>
+
+        <section id="upload-confirmation" class="upload-confirmation" hidden>
+          <h2>Upload complete</h2>
+          <p id="confirmation-summary" class="confirmation-summary"></p>
+          <p id="confirmation-folder" class="confirmation-folder"></p>
+          <div id="confirmation-files" class="confirmation-files"></div>
+        </section>
       </section>
     </main>
 
